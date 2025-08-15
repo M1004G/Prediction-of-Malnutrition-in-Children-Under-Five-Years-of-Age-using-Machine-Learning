@@ -111,7 +111,7 @@ It combines **classification models** (predicting categorical malnutrition statu
 | Wasting      | 6.43   | 0.805 |
 | Underweight  | 21.03  | 0.753 |
 
-
+---
 
 ### Enhanced XGBoost Multi-Output Regressor
 | Target       | Mean CV R² | Test R² | Test RMSE |
@@ -120,7 +120,7 @@ It combines **classification models** (predicting categorical malnutrition statu
 | Underweight  | 0.821      | 0.841   | 3.68      |
 | Wasting      | 0.839      | 0.835   | 2.33      |
 
-
+---
 
 ## 6. Key Takeaways
 - **XGBoost Classifier** gave best results for classification tasks.
@@ -128,3 +128,8 @@ It combines **classification models** (predicting categorical malnutrition statu
 - **SMOTEENN balancing** significantly improved performance for minority classes.
 - Combining categorical WHO-based classification with continuous regression yields better insights.
 
+---
+
+## 7. Authors
+- **Muskan Goel**  
+- **Kriti Jangra**
