@@ -4,13 +4,29 @@
 This project analyzes and predicts child malnutrition indicators using WHO categories.  
 It combines **classification models** (predicting categorical malnutrition status) and **regression models** (predicting continuous malnutrition rates) to offer both qualitative and quantitative insights.
 
-**Targets:**
-- **HAZ**: Height-for-Age Z-score → *Stunting*
-- **WAZ**: Weight-for-Age Z-score → *Underweight*
-- **WHZ**: Weight-for-Height Z-score → *Wasting*
+---
 
+## 2. Dataset
+The dataset used in this project comes from the [India National Family Health Survey (NFHS)](https://www.kaggle.com/datasets/kmldas/india-national-family-health-survey-nfhs?resource=download) available on Kaggle.
 
-## 2. Data Cleaning & Preprocessing
+- **File Name:** `datafile.csv` (included in this repository)  
+- **Source:** Kaggle (compiled from NFHS survey data)  
+- **Description:** Contains anthropometric and demographic data of children, along with socio-economic indicators, enabling analysis and prediction of malnutrition metrics based on WHO growth standards.  
+- **Target Variables:**  
+  - **HAZ (Height-for-Age Z-score)** → Stunting  
+  - **WAZ (Weight-for-Age Z-score)** → Underweight  
+  - **WHZ (Weight-for-Height Z-score)** → Wasting  
+- **Size:** ~1,000+ records with both numerical and categorical features  
+- **Key Features:**  
+  - Child’s age, gender, height, weight  
+  - Mother’s education level  
+  - Household wealth index  
+  - Region and state  
+  - Additional socio-economic and health indicators  
+
+---
+
+## 3. Data Cleaning & Preprocessing
 1. **Initial Inspection**
    - Checked for missing values, duplicates, and incorrect data types.
 2. **Missing Value Handling**
@@ -25,8 +41,9 @@ It combines **classification models** (predicting categorical malnutrition statu
 5. **Splitting**
    - Used **Stratified Train-Test Split** for classification to preserve class distribution.
 
+---
 
-## 3. Models Used
+## 4. Models Used
 
 ### Classification Models
 - **Random Forest with SMOTEENN (RF_SMOTEENN)**
@@ -39,7 +56,11 @@ It combines **classification models** (predicting categorical malnutrition statu
 - **Enhanced Random Forest (Cross-validated)**
 - **Enhanced XGBoost Multi-Output Regressor**
 
-## 4. Classification Results
+---
+
+## 5. Classification Results  
+
+> **Note:** Accuracy values are only shown where they were recorded in the original experiments. Due to class imbalance in the dataset, **Macro F1** scores and per-class metrics from classification reports were prioritized as the main performance indicators.  
 
 ### HAZ_Category (Stunting)
 | Model        | Macro F1 | Accuracy |  
@@ -54,6 +75,7 @@ It combines **classification models** (predicting categorical malnutrition statu
 - Moderate: Precision=0.83, Recall=0.83, F1=0.83
 - Very High: Precision=0.87, Recall=1.00, F1=0.93
 
+---
 
 ### WAZ_Category (Underweight)
 | Model        | Macro F1 | Accuracy | 
@@ -68,6 +90,7 @@ It combines **classification models** (predicting categorical malnutrition statu
 - Other: Precision=1.00, Recall=0.67, F1=0.81
 - Very High: Precision=1.00, Recall=0.99, F1=0.92
 
+---
 
 ### WHZ_Category (Wasting)
 | Model        | Macro F1 | Accuracy | 
@@ -81,9 +104,9 @@ It combines **classification models** (predicting categorical malnutrition statu
 - Moderate: Precision=0.89, Recall=0.83, F1=0.86
 - Severe: Precision=0.98, Recall=1.00, F1=0.99
 
-Note: Accuracy values are only shown where they were recorded. Due to class imbalance in the dataset, Macro F1 scores and per-class metrics from classification reports were prioritized as the main performance indicators.
+---
 
-## 5. Regression Results
+## 6. Regression Results
 
 ### Baseline Linear Regression
 | Target       | MSE    | R²    |
@@ -123,7 +146,7 @@ Note: Accuracy values are only shown where they were recorded. Due to class imba
 
 ---
 
-## 6. Key Takeaways
+## 7. Key Takeaways
 - **XGBoost Classifier** gave best results for classification tasks.
 - **Enhanced XGBoost Regressor** achieved highest R² scores for regression.
 - **SMOTEENN balancing** significantly improved performance for minority classes.
@@ -131,6 +154,6 @@ Note: Accuracy values are only shown where they were recorded. Due to class imba
 
 ---
 
-## 7. Authors
-- **Muskan Goel**  
-- **Kriti Jangra**
+## 8. Authors
+- Muskan Goel  
+- Kriti Jangra
