@@ -35,7 +35,7 @@ The dataset used in this project comes from the [India National Family Health Su
 3. **Feature Engineering**
    - Generated WHO malnutrition category columns.
    - One-hot encoded categorical variables.
-   - Normalized numerical features (for models like KNN).
+   - Normalized numerical features.
 4. **Balancing**
    - Applied **SMOTEENN** to handle class imbalance.
 5. **Splitting**
