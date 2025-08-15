@@ -126,5 +126,5 @@ It combines **classification models** (predicting categorical malnutrition statu
 - **XGBoost Classifier** gave best results for classification tasks.
 - **Enhanced XGBoost Regressor** achieved highest R² scores for regression.
 - **SMOTEENN balancing** significantly improved performance for minority classes.
-- Combining categorical WHO-based classification with continuous regression yields richer insights.
+- Combining categorical WHO-based classification with continuous regression yields better insights.
 
