@@ -81,7 +81,7 @@ It combines **classification models** (predicting categorical malnutrition statu
 - Moderate: Precision=0.89, Recall=0.83, F1=0.86
 - Severe: Precision=0.98, Recall=1.00, F1=0.99
 
-Note: Accuracy values are only shown where they were recorded in the original experiments. Due to class imbalance in the dataset, Macro F1 scores and per-class metrics from classification reports were prioritized as the main performance indicators.
+Note: Accuracy values are only shown where they were recorded. Due to class imbalance in the dataset, Macro F1 scores and per-class metrics from classification reports were prioritized as the main performance indicators.
 
 ## 5. Regression Results
 
