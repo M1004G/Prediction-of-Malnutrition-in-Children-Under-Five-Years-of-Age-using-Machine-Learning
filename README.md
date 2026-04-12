@@ -1,159 +1,188 @@
-# Malnutrition Prediction & Classification using Machine Learning
+# 🍽️ Prediction of Malnutrition in Children Under Five Years of Age Using Machine Learning
 
-## 1. Project Overview
-This project analyzes and predicts child malnutrition indicators using WHO categories.  
-It combines **classification models** (predicting categorical malnutrition status) and **regression models** (predicting continuous malnutrition rates) to offer both qualitative and quantitative insights.
+> Predicting stunting, wasting, and underweight prevalence across Indian districts using NFHS-5 survey data and ensemble machine learning models.
 
 ---
 
-## 2. Dataset
-The dataset used in this project comes from the [India National Family Health Survey (NFHS)](https://www.kaggle.com/datasets/kmldas/india-national-family-health-survey-nfhs?resource=download) available on Kaggle.
+## 📌 Overview
 
-- **File Name:** `datafile.csv` (included in this repository)  
-- **Source:** Kaggle (compiled from NFHS survey data)  
-- **Description:** Contains anthropometric and demographic data of children, along with socio-economic indicators, enabling analysis and prediction of malnutrition metrics based on WHO growth standards.  
-- **Target Variables:**  
-  - **HAZ (Height-for-Age Z-score)** → Stunting  
-  - **WAZ (Weight-for-Age Z-score)** → Underweight  
-  - **WHZ (Weight-for-Height Z-score)** → Wasting  
-- **Size:** ~1,000+ records with both numerical and categorical features  
-- **Key Features:**  
-  - Child’s age, gender, height, weight  
-  - Mother’s education level  
-  - Household wealth index  
-  - Region and state  
-  - Additional socio-economic and health indicators  
+Child malnutrition remains one of India's most critical public health challenges. This project applies supervised machine learning to **predict the percentage of children under 5 years** who are stunted, wasted, or underweight at the district level — using socioeconomic, maternal health, and household environment indicators from India's **National Family Health Survey (NFHS-5)**.
+
+The goal is to identify which districts are at highest risk and which upstream factors (literacy, sanitation, anaemia, breastfeeding, etc.) are the strongest predictors of malnutrition — insights that can inform policy and resource allocation.
 
 ---
 
-## 3. Data Cleaning & Preprocessing
-1. **Initial Inspection**
-   - Checked for missing values, duplicates, and incorrect data types.
-2. **Missing Value Handling**
-   - Numerical: Median imputation.
-   - Categorical: Mode or 'Unknown'.
-3. **Feature Engineering**
-   - Generated WHO malnutrition category columns.
-   - One-hot encoded categorical variables.
-   - Normalized numerical features.
-4. **Balancing**
-   - Applied **SMOTEENN** to handle class imbalance.
-5. **Splitting**
-   - Used **Stratified Train-Test Split** for classification to preserve class distribution.
+## 📊 Dataset
+
+| Property | Detail |
+|---|---|
+| **Source** | NFHS-5 (2019–21), Government of India |
+| **Unit of analysis** | District-level |
+| **Total records** | 706 districts (705 after deduplication) |
+| **Total features** | 109 columns → 32 used after cleaning |
+| **Target variables** | 3 (stunting %, wasting %, underweight %) |
+
+### Target Variables
+- `Children under 5 years who are stunted (height-for-age)` — chronic malnutrition
+- `Children under 5 years who are wasted (weight-for-height)` — acute malnutrition
+- `Children under 5 years who are underweight (weight-for-age)` — composite indicator
+
+### Feature Categories
+- **Child health & diet** — breastfeeding rates, vaccination coverage, anaemia prevalence, diarrhoea
+- **Maternal health** — literacy, antenatal care, iron supplementation, anaemia
+- **Household environment** — electricity, sanitation, clean fuel, iodized salt, health insurance
 
 ---
 
-## 4. Models Used
+## 🔬 Methodology
 
-### Classification Models
-- **Random Forest with SMOTEENN (RF_SMOTEENN)**
-- **Balanced Random Forest (BalancedRF)**
-- **XGBoost Classifier (XGB)**
+### 1. Data Cleaning & Preprocessing
+- Replaced dirty values (`*`, `-`, `NA`, parenthesized numbers) with `NaN`
+- Dropped columns with >50% missing values
+- Imputed remaining missing values using **mean** (symmetric) or **median** (skewed), determined per-column by skewness test
+- Capped outliers using IQR method (1.5× rule), replacing with column median
+- Removed 1 duplicate row
 
-### Regression Models
-- **Linear Regression (Baseline)**
-- **Random Forest Regressor**
-- **Enhanced Random Forest (Cross-validated)**
-- **Enhanced XGBoost Multi-Output Regressor**
+### 2. Feature Engineering
+- Separated target columns from feature matrix prior to any modelling (no leakage)
+- Applied `StandardScaler` for models requiring normalized input
+- Computed feature-target correlations; selected features with |r| > 0.4 for baseline
 
----
+### 3. Models Trained
 
-## 5. Classification Results  
+#### Regression (predicting raw % values)
+| Model | Targets | Best R² |
+|---|---|---|
+| XGBoost Regressor (enhanced, per-target) | All 3 | **0.845** (underweight) |
+| Multi-Output Random Forest + CV | All 3 | 0.783 (wasting) |
+| Random Forest per Target | All 3 | 0.775 (wasting) |
+| Linear Regression (baseline) | All 3 | 0.763 (underweight) |
+| XGBoost + RandomizedSearchCV | All 3 | 0.673 (underweight) |
 
-> **Note:** Accuracy values are only shown where they were recorded in the original experiments. Due to class imbalance in the dataset, **Macro F1** scores and per-class metrics from classification reports were prioritized as the main performance indicators.  
+#### Classification (WHO threshold-based categories)
+| Model | Target | Macro F1 |
+|---|---|---|
+| XGBoost Classifier | Stunting (HAZ) | **0.909** |
+| Balanced Random Forest | Stunting (HAZ) | 0.906 |
+| XGBoost Classifier | Wasting (WHZ) | 0.867 |
+| RF + SMOTEENN | Wasting (WHZ) | **0.887** |
+| XGBoost Classifier | Underweight (WAZ) | 0.743 |
 
-### HAZ_Category (Stunting)
-| Model        | Macro F1 | Accuracy |  
-|--------------|----------|----------|
-| RF_SMOTEENN  | 0.844    | -        |      
-| BalancedRF   | 0.911    | -        |       
-| XGB          | **0.929**| 87%      | 
+### 4. Best Regression Results (Enhanced XGBoost, per-target)
 
-**XGB Class Report:**
-- High: Precision=0.98, Recall=0.82, F1=0.86
-- Low: Precision=1.00, Recall=1.00, F1=1.00
-- Moderate: Precision=0.83, Recall=0.83, F1=0.83
-- Very High: Precision=0.87, Recall=1.00, F1=0.93
+| Target | CV R² | Test R² | Test RMSE |
+|---|---|---|---|
+| Stunting | 0.729 | **0.797** | 3.89 |
+| Underweight | 0.816 | **0.845** | 3.58 |
+| Wasting | 0.831 | **0.837** | 2.36 |
 
----
+### 5. Best Classification Results (WHO % Categories)
 
-### WAZ_Category (Underweight)
-| Model        | Macro F1 | Accuracy | 
-|--------------|----------|----------|
-| RF_SMOTEENN  | 0.699    | -        |       
-| BalancedRF   | **0.798**| 92%      | 
-| XGB          | 0.755    | -        |       
-
-**BalancedRF Class Report:**
-- High: Precision=0.95, Recall=0.90, F1=0.92
-- Moderate: Precision=0.70, Recall=0.79, F1=0.84
-- Other: Precision=1.00, Recall=0.67, F1=0.81
-- Very High: Precision=1.00, Recall=0.99, F1=0.92
-
----
-
-### WHZ_Category (Wasting)
-| Model        | Macro F1 | Accuracy | 
-|--------------|----------|----------|
-| RF_SMOTEENN  | 0.914    | -        |      
-| BalancedRF   | 0.916    | -        |       
-| XGB          | **0.936**| 94%      | 
-
-**XGB Class Report:**
-- Mild: Precision=0.77, Recall=0.77, F1=0.77
-- Moderate: Precision=0.89, Recall=0.83, F1=0.86
-- Severe: Precision=0.98, Recall=1.00, F1=0.99
+| Target | Accuracy | Macro F1 |
+|---|---|---|
+| Stunting (HAZ) | 82% | 0.819–0.909 |
+| Wasting (WHZ) | 96% | 0.867–0.887 |
+| Underweight (WAZ) | 92% | 0.672–0.758 |
 
 ---
 
-## 6. Regression Results
+## 🔑 Top Predictive Features
 
-### Baseline Linear Regression
-| Target       | MSE    | R²    |
-|--------------|--------|-------|
-| Stunting     | 18.41  | 0.739 |
-| Wasting      | 8.78   | 0.734 |
-| Underweight  | 18.72  | 0.780 |
+From XGBoost feature importance and Pearson correlation analysis, the strongest predictors of child malnutrition are:
 
----
+1. **Women's BMI below normal** (r = 0.74 with underweight) — strongest single predictor
+2. **Population below age 15 years** — demographic pressure indicator
+3. **Women's literacy rate** — maternal education strongly linked to all 3 targets
+4. **Women with 10+ years of schooling**
+5. **Improved sanitation access**
+6. **Households using clean fuel**
+7. **Female school attendance**
+8. **Child marriage rate** (women married before 18)
+9. **Children aged 6–59 months who are anaemic**
+10. **All women who are anaemic**
 
-### Random Forest (Per Target)
-| Target       | MSE    | R²    |
-|--------------|--------|-------|
-| Stunting     | 22.67  | 0.679 |
-| Wasting      | 6.72   | 0.796 |
-| Underweight  | 24.43  | 0.713 |
-
----
-
-### Enhanced Random Forest (Cross-Validated)
-- **Mean CV R²** = 0.758
-
-| Target       | MSE    | R²    |
-|--------------|--------|-------|
-| Stunting     | 21.26  | 0.699 |
-| Wasting      | 6.43   | 0.805 |
-| Underweight  | 21.03  | 0.753 |
+SHAP analysis confirmed that **maternal nutritional status and education are the dominant upstream drivers** of child malnutrition across Indian districts.
 
 ---
 
-### Enhanced XGBoost Multi-Output Regressor
-| Target       | Mean CV R² | Test R² | Test RMSE |
-|--------------|------------|---------|-----------|
-| Stunting     | 0.734      | 0.812   | 3.65      |
-| Underweight  | 0.821      | 0.841   | 3.68      |
-| Wasting      | 0.839      | 0.835   | 2.33      |
+## 🗂️ Project Structure
+
+```
+📦 malnutrition-prediction
+ ┣ 📓 ML_project.ipynb        # Main notebook (data cleaning → modelling → SHAP)
+ ┣ 📄 datafile.csv            # NFHS-5 district-level dataset
+ ┗ 📄 README.md
+```
 
 ---
 
-## 7. Key Takeaways
-- **XGBoost Classifier** gave best results for classification tasks.
-- **Enhanced XGBoost Regressor** achieved highest R² scores for regression.
-- **SMOTEENN balancing** significantly improved performance for minority classes.
-- Combining categorical WHO-based classification with continuous regression yields better insights.
+## ⚙️ Requirements
+
+```bash
+pip install pandas numpy scikit-learn xgboost imbalanced-learn shap matplotlib seaborn catboost
+```
+
+| Library | Version |
+|---|---|
+| Python | 3.10+ |
+| pandas | 2.x |
+| scikit-learn | 1.x |
+| xgboost | 1.7+ |
+| imbalanced-learn | 0.11+ |
+| shap | 0.44+ |
 
 ---
 
-## 8. Authors
-- Muskan Goel  
-- Kriti Jangra
+## 🚀 How to Run
+
+1. Clone the repository
+```bash
+git clone https://github.com/YOUR_USERNAME/malnutrition-prediction.git
+cd malnutrition-prediction
+```
+
+2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+3. Open the notebook
+```bash
+jupyter notebook ML_project.ipynb
+```
+
+4. Upload `datafile.csv` to `/content/` if running on Google Colab, or update the file path in Cell 1.
+
+---
+
+## 📈 Key Findings
+
+- **Wasting** (acute malnutrition) is the hardest to predict with regression (R² ~0.78–0.84), likely due to its episodic nature linked to immediate illness
+- **Underweight** is the most predictable target (R² up to 0.845), as it integrates both chronic and acute malnutrition signals
+- **Classification into WHO severity categories** works very well (F1 up to 0.91), making the models practical for district-level risk stratification
+- Districts with **low female literacy, high child marriage rates, and poor sanitation** consistently cluster in the high-malnutrition categories
+- **Maternal BMI** alone explains ~27% of feature importance for stunting prediction
+
+---
+
+## ⚠️ Limitations
+
+- Dataset is cross-sectional (NFHS-5, 2019–21) — causal inference is not possible
+- Some columns had high missingness (>90% for diarrhoea-related treatment columns) and were dropped
+- District-level aggregates mask intra-district variation
+- Model performance is bounded by the quality and granularity of NFHS survey data
+
+---
+
+## 📚 Data Source
+
+> **National Family Health Survey-5 (NFHS-5), 2019–21**
+> Ministry of Health and Family Welfare, Government of India
+> [http://rchiips.org/nfhs/nfhs5.shtml](http://rchiips.org/nfhs/nfhs5.shtml)
+
+---
+
+## 🙏 Acknowledgements
+
+This project was developed as part of an academic machine learning course. The NFHS-5 data is publicly available and collected by the International Institute for Population Sciences (IIPS), Mumbai.
+
