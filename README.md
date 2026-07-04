@@ -14,9 +14,7 @@ The goal is to identify which districts are at highest risk and which upstream f
 
 ## ⚠️ Note on Methodology Correction
 
-An earlier version of this project reported inflated performance due to two sources of data leakage: (1) target-derived severity flags and cross-target ratios computed from the label itself and fed back in as input features, and (2) feature selection performed on the full dataset before the train/test split. This version removes both — feature selection is now fit strictly on training data, and reported metrics reflect genuine train/test separation. As a result, headline R² dropped from the low 0.8s to a more realistic 0.4–0.7 range, which is the honest number for this kind of noisy, cross-sectional survey data.
-
-One smaller-scale leakage source remains under review: state-level target encoding is currently computed with an internal KFold safeguard (a district can't see its own value), but is not yet strictly re-fit within the train/test boundary. SHAP analysis shows this feature ranks outside the top 10 for the targets checked so far, so its effect on reported metrics is likely minor — but it hasn't been fully eliminated yet.
+An earlier version of this project reported inflated performance due to two sources of data leakage: (1) target-derived severity flags and cross-target ratios computed from the label itself and fed back in as input features, and (2) feature selection performed on the full dataset before the train/test split. This version removes both — feature selection is now fit strictly on training data, and reported metrics reflect genuine train/test separation. 
 
 ---
 
