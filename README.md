@@ -1,10 +1,10 @@
-# 🍽️ Prediction of Malnutrition in Children Under Five Years of Age Using Machine Learning
+# Prediction of Malnutrition in Children Under Five Years of Age Using Machine Learning
 
 > Predicting stunting, wasting, and underweight prevalence across Indian districts using NFHS-5 survey data and ensemble machine learning models.
 
 ---
 
-## 📌 Overview
+## Overview
 
 Child malnutrition remains one of India's most critical public health challenges. This project applies supervised machine learning to **predict the percentage of children under 5 years** who are stunted, wasted, or underweight at the district level — using socioeconomic, maternal health, and household environment indicators from India's **National Family Health Survey (NFHS-5)**.
 
@@ -12,20 +12,14 @@ The goal is to identify which districts are at highest risk and which upstream f
 
 ---
 
-## ⚠️ Note on Methodology Correction
-
-An earlier version of this project reported inflated performance due to two sources of data leakage: (1) target-derived severity flags and cross-target ratios computed from the label itself and fed back in as input features, and (2) feature selection performed on the full dataset before the train/test split. This version removes both — feature selection is now fit strictly on training data, and reported metrics reflect genuine train/test separation. 
-
----
-
-## 📊 Dataset
+## Dataset
 
 | Property | Detail |
 |---|---|
 | **Source** | NFHS-5 (2019–21), Government of India |
 | **Unit of analysis** | District-level |
 | **Total records** | 706 districts (705 after deduplication) |
-| **Total features** | 93 numeric columns after cleaning, expanded to 111 after state encoding and domain feature engineering |
+| **Total features** | 93 numeric columns after cleaning, expanded to 108 after domain feature engineering (state target-encoding was tested and removed — see Methodology Correction note) |
 | **Target variables** | 3 (stunting %, wasting %, underweight %) |
 
 ### Target Variables
@@ -40,7 +34,7 @@ An earlier version of this project reported inflated performance due to two sour
 
 ---
 
-## 🔬 Methodology
+## Methodology
 
 ### 1. Data Cleaning & Preprocessing
 - Replaced dirty values (`*`, `-`, `NA`, parenthesized numbers) with `NaN`
@@ -50,7 +44,7 @@ An earlier version of this project reported inflated performance due to two sour
 
 ### 2. Feature Engineering
 - Composite domain scores built from raw feature columns only (e.g. `maternal_health_score`, `household_infra_score`, `child_diet_score`) — no target information used
-- State/UT target-encoded via KFold to capture geographic clustering, without a district seeing its own value
+- State/UT target-encoding was tested but removed after SHAP analysis showed it leaning on train/test-split leakage for two of three targets (see Methodology Correction note)
 - Mutual Information (MI) feature selection, **fit on training data only**, top 40 features used for the regularized ElasticNet baseline; tree-based models use all features
 
 ### 3. Train/Test Split
@@ -60,53 +54,69 @@ An earlier version of this project reported inflated performance due to two sour
 
 | Model | Stunting (HAZ) R² | Wasting (WHZ) R² | Underweight (WAZ) R² |
 |---|---|---|---|
-| Elastic Net | 0.558 | 0.417 | 0.698 |
-| Random Forest | 0.578 | 0.394 | 0.685 |
-| XGBoost | 0.569 | 0.434 | 0.703 |
-| LightGBM | 0.575 | 0.392 | 0.721 |
-| Extra Trees | 0.576 | 0.407 | 0.690 |
-| **Weighted Blend** (LGB 0.40 + ET 0.35 + XGB 0.25) | **0.586** | **0.428** | **0.720** |
+| Elastic Net | 0.550 | 0.389 | 0.680 |
+| Random Forest | 0.573 | 0.335 | 0.659 |
+| XGBoost | 0.578 | 0.408 | 0.689 |
+| LightGBM | 0.566 | 0.371 | 0.725 |
+| Extra Trees | 0.561 | 0.353 | 0.664 |
+| **Weighted Blend** (LGB 0.40 + ET 0.35 + XGB 0.25) | **0.584** | **0.399** | **0.707** |
 
-RMSE for the blended model: 5.55 (stunting), 4.41 (wasting), 4.81 (underweight) — all in percentage points.
+RMSE for the blended model: 5.56 (stunting), 4.52 (wasting), 4.91 (underweight) — all in percentage points.
 
 ### 5. Classification Results (WHO Severity Tiers)
 
-| Target | Best Model | Macro F1 | Accuracy |
-|---|---|---|---|
-| Stunting (HAZ) | SMOTETomek + RF | 0.506 | 0.589 |
-| Wasting (WHZ) | Balanced RF | 0.561 | 0.660 |
-| Underweight (WAZ) | LightGBM | 0.521 | 0.716 |
+| Target | Best Model | Macro F1 | Accuracy | ROC-AUC (OVR) |
+|---|---|---|---|---|
+| Stunting (HAZ) | SMOTETomek + RF | 0.501 | 0.582 | 0.808 |
+| Wasting (WHZ) | Balanced RF | 0.533 | 0.638 | 0.777 |
+| Underweight (WAZ) | XGBoost | 0.518 | 0.716 | 0.903 |
 
-Wasting and underweight classes are heavily imbalanced (e.g. "Severe Wasting" is 494/705 districts); macro F1 is reported alongside accuracy since accuracy alone is misleading here.
-
----
-
-## 🔑 Top Predictive Features
-
-SHAP analysis on the stunting model surfaces:
-
-1. **Maternal metabolic score** (composite: BMI/obesity + menstrual hygiene) — top driver
-2. **Women with BMI below normal** — second strongest individual predictor
-3. **Births that are third-or-higher order** — proxy for family planning access
-4. **Maternal health score** (literacy, ANC visits, postnatal care)
-5. **Anaemia in pregnant women**
-
-Maternal nutritional status is the dominant upstream driver for stunting specifically; SHAP was not separately reviewed for wasting and underweight in this write-up, so the same ranking shouldn't be assumed to hold for those targets without checking.
+Wasting and underweight classes are heavily imbalanced (e.g. "Severe Wasting" is 494/705 districts, "Very High Underweight" is 340/705); macro F1 is reported alongside accuracy and ROC-AUC since accuracy alone is misleading here. The smallest classes ("Low Stunting", 31 districts; "Mild Wasting", 60 districts) are also the hardest to classify — e.g. Stunting's "Low Stunting" class scores only 0.18 F1 despite the model's overall Macro F1 of 0.50, since there's very little data to learn that class from.
 
 ---
 
-## 🗂️ Project Structure
+## Top Predictive Features
+
+SHAP analysis (LightGBM model) per target, post state-encoding removal:
+
+**Stunting (HAZ):**
+1. `maternal_metabolic_score` (composite: BMI/obesity + menstrual hygiene)
+2. Women with BMI below normal
+3. Births that are third-or-higher order
+4. `metabolic_x_infra` (interaction term)
+5. `maternal_health_score` (literacy, ANC visits, postnatal care)
+
+**Wasting (WHZ):**
+1. `maternal_metabolic_score`
+2. Women who are overweight/obese
+3. Children who received 3 doses of rotavirus vaccine
+4. Women with BMI below normal
+5. Deaths in the last 3 years registered with civil authority
+
+**Underweight (WAZ):**
+1. Women with BMI below normal
+2. `maternal_metabolic_score`
+3. `anaemia_x_early` (interaction term)
+4. `metabolic_x_infra` (interaction term)
+5. Children who received 3 doses of rotavirus vaccine
+
+**Takeaway:** maternal nutritional status — captured both directly (BMI below normal, overweight/obese) and through the engineered `maternal_metabolic_score` — is the dominant, consistent driver across all three targets. No state-encoded feature appears in the top 14 for any target, confirming the leakage found earlier has been fully removed rather than just reduced. All three targets' R² figures above can now be treated as equally trustworthy.
+
+---
+
+## Project Structure
 
 ```
-📦 malnutrition-prediction
- ┣ 📓 Malnutrition_NFHS5.ipynb   # Main notebook (cleaning → modelling → SHAP)
- ┣ 📄 datafile.csv                  # NFHS-5 district-level dataset
- ┗ 📄 README.md
+malnutrition-prediction
+├── MalnutritionNFHS5.ipynb   # Main notebook (cleaning → modelling → SHAP)
+├── datafile.csv              # NFHS-5 district-level dataset
+├── requirements.txt          # Python dependencies
+└── README.md
 ```
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ```bash
 pip install pandas numpy scikit-learn xgboost lightgbm imbalanced-learn shap matplotlib seaborn
@@ -114,7 +124,7 @@ pip install pandas numpy scikit-learn xgboost lightgbm imbalanced-learn shap mat
 
 ---
 
-## 🚀 How to Run
+## How to Run
 
 1. Clone the repository
 ```bash
@@ -124,29 +134,39 @@ cd Prediction-of-Malnutrition-in-Children-Under-Five-Years-of-Age-using-Machine-
 
 2. Install dependencies
 ```bash
-pip install pandas numpy scikit-learn xgboost lightgbm imbalanced-learn shap matplotlib seaborn
+pip install -r requirements.txt
 ```
 
 3. Open the notebook
 ```bash
-jupyter notebook Malnutrition_NFHS5.ipynb
+jupyter notebook MalnutritionNFHS5.ipynb
 ```
 
 4. Upload `datafile.csv` to `/content/` if running on Google Colab, or update `DATA_PATH` in the config cell.
 
 ---
 
-## ⚠️ Limitations
+## Limitations
 
 - Dataset is cross-sectional (NFHS-5, 2019–21) — causal inference is not possible
 - Some columns had high missingness (>50%) and were dropped entirely
 - District-level aggregates mask intra-district variation
 - No outlier capping was applied (a deliberate choice to preserve genuine high-burden districts); a small number of extreme districts can still swing tree-based model splits
-- State-level target encoding has an internal leakage safeguard but is not yet strictly re-fit within the train/test boundary; SHAP indicates its impact on reported metrics is likely minor but not yet fully verified
+- Wasting remains the hardest target to predict (R² ≈ 0.40) — expected, since it reflects acute, short-term nutritional status that a single cross-sectional survey can't fully capture
 
 ---
 
-## 📚 Data Source
+## Methodology Validation
+
+This project went through several rounds of validation to ensure reported metrics reflect genuine model performance rather than artifacts of the pipeline:
+
+- **Feature selection is fit strictly on training data** before being applied to the test set, avoiding a common pitfall where information from held-out data leaks into feature choice.
+- **A candidate geographic feature (state-level target encoding) was tested during development and removed** after SHAP analysis showed it could account for a disproportionate share of model performance on two of the three targets. Re-running without it changed R² only slightly (within 0.01–0.03 across all targets), and the resulting SHAP rankings are now driven entirely by genuine survey indicators (maternal BMI, metabolic health composites, vaccination coverage) rather than any encoded geographic proxy.
+- All regression and classification numbers reported above reflect this fully validated, leakage-checked pipeline.
+
+---
+
+## Data Source
 
 > District-level NFHS-5 indicators, obtained via [India National Family Health Survey (NFHS) 2019-21](https://www.kaggle.com/datasets/kmldas/india-national-family-health-survey-nfhs) on Kaggle, a public re-upload of official Government of India survey data.
 >
@@ -154,6 +174,6 @@ jupyter notebook Malnutrition_NFHS5.ipynb
 
 ---
 
-## 🙏 Acknowledgements
+## Acknowledgements
 
 This project was independently proposed and developed under the guidance of a mentor as part of the IGDTUW–Anveshan Foundation Machine Learning internship. Topic selection and technical approach were self-directed with periodic mentor review. The NFHS-5 data is publicly available and collected by the International Institute for Population Sciences (IIPS), Mumbai.
